@@ -52,6 +52,7 @@ function syncForm() {
     if (input.type === 'range') input.style.setProperty('--fill', `${(value - input.min) / (input.max - input.min) * 100}%`);
   }
   $('current-skin').textContent = SKINS.find(s => s.id === config.skin)?.name || config.skin;
+  fields.namedItem('accent').disabled=Boolean(config.accentFromArtwork);
   updateOutput(); postPreview();
   if(currentAudio)renderAudio(currentAudio);
   for (const card of document.querySelectorAll('.skin-card')) { const selected = card.dataset.skin === config.skin; card.classList.toggle('selected', selected); card.setAttribute('aria-pressed', selected); }

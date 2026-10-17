@@ -36,6 +36,8 @@ test('validate colors, dimensions and booleans; accept all 14 skins', () => {
   for (const invalid of [{ width: 299 }, { width: 1001 }, { scale: 0 }, { opacity: -1 }, { hidePaused: 'true' }, { accent: 'url(evil)' }, { skin: '<script>' }, {visualization:'invalid'}, {spectrumGain:0}, null, []]) assert.throws(() => validateConfig(invalid));
   assert.deepEqual(validateConfig({ width: 700, unsupported: true }), { width: 700 });
   assert.deepEqual(validateConfig({remainingColor:'#65748a'}),{remainingColor:'#65748a'});
+  assert.deepEqual(validateConfig({accentFromArtwork:true}),{accentFromArtwork:true});
+  assert.throws(()=>validateConfig({accentFromArtwork:'true'}));
   assert.throws(()=>validateConfig({remainingColor:'transparent'}));
 });
 test('playback clock pauses, scales rate, clamps duration and handles unknown length', () => {
@@ -54,6 +56,7 @@ test('skin presets and scene migration preserve OBS size and hide behavior', () 
   assert.deepEqual(migrateConfig({...migrated,accent:'#123456'}),{...migrated,accent:'#123456'});
   const next = applySkin(migrated,'modern');
   assert.equal(next.skin,'modern'); assert.equal(next.width,640); assert.equal(next.showProgress,false);
+  assert.equal(applySkin({...migrated,accentFromArtwork:true},'pulse').accentFromArtwork,true);
   for (const id of SKINS) {
     const config={...skinDefaults(id),width:1000,scale:2}; const size=outputSize(config);
     assert.equal(size.width,2048); assert.ok(size.height>=248 && size.height<=700,id);
@@ -87,7 +90,7 @@ test('normalize Apple Music combined artist and album without changing other sou
   assert.equal(normalizeTrack({ ...track, album: 'Already supplied' }).artist, track.artist);
 });
 test('dashboard, overlay and JS assets serve correctly', async () => {
-  for (const path of ['/', '/overlay', '/app.js', '/overlay.js', '/overlay.css', '/shared.js', '/skin-renderer.js', '/skins.html', '/gallery.js', '/gallery.css', '/artwork.svg']) {
+  for (const path of ['/', '/overlay', '/app.js', '/overlay.js', '/overlay.css', '/shared.js', '/skin-renderer.js', '/artwork-color.js', '/skins.html', '/gallery.js', '/gallery.css', '/artwork.svg']) {
     const response = await api(path); assert.equal(response.status, 200, path); assert.ok((await response.text()).length > 30);
   }
   const state = await (await api('/api/state')).json();
@@ -96,14 +99,16 @@ test('dashboard, overlay and JS assets serve correctly', async () => {
 test('create, edit and persist an independent OBS scene', async () => {
   const created = await api('/api/profiles', 'POST', { name: '游戏直播', config: { skin: 'aurora' } });
   assert.equal(created.status, 201); const profile = await created.json(); createdId = profile.id;
-  const patched = await api(`/api/profiles/${createdId}`, 'PATCH', { config: { width: 720, showAlbum: true }, name: '主场景' });
+  const patched = await api(`/api/profiles/${createdId}`, 'PATCH', { config: { width: 720, showAlbum: true, accentFromArtwork:true }, name: '主场景' });
   assert.equal(patched.status, 200);
   const saved = JSON.parse(await readFile(resolve(runtime, 'settings.json'), 'utf8'));
   assert.equal(saved[1].config.width, 720); assert.equal(saved[1].config.skin, 'aurora'); assert.equal(saved[1].name, '主场景');
   assert.equal(saved[0].config.width, DEFAULTS.width);
+  assert.equal(saved[1].config.accentFromArtwork,true);
   const invalid = await api(`/api/profiles/${createdId}`, 'PATCH', { config: { width: 90000 } }); assert.equal(invalid.status, 400);
   const ended = once(child, 'exit'); child.kill(); await ended; await start();
   const state = await (await api('/api/state')).json(); assert.equal(state.profiles[1].config.width, 720);
+  assert.equal(state.profiles[1].config.accentFromArtwork,true);
 });
 test('SSE streams a snapshot then a live configuration update', async () => {
   const abort = new AbortController();
