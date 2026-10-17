@@ -1,0 +1,21 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { fileURLToPath } from 'node:url';
+const exec=promisify(execFile);
+test('native FFT places a 1kHz sine in its frequency band and decays to zero on silence',{skip:process.platform!=='win32'},async()=>{
+  const file=fileURLToPath(new URL('../bridge/audio.ps1',import.meta.url));
+  const {stdout}=await exec('powershell.exe',['-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',file,'-SelfTest'],{windowsHide:true,timeout:20000});
+  const [tone,silence,quiet,twoTones,release]=stdout.trim().split(/\r?\n/).map(line=>JSON.parse(line));
+  assert.equal(tone.bands.length,44);assert.ok(Math.abs(tone.rms-Math.SQRT1_2*.5)<.001);
+  const peak=tone.bands.indexOf(Math.max(...tone.bands));assert.ok(peak>=22&&peak<=24);
+  assert.ok(tone.bands[peak]>.5);assert.ok(tone.bands.every(n=>n>=0&&n<=1));
+  assert.ok(silence.bands.every(n=>n===0));assert.equal(silence.rms,0);assert.equal(silence.peak,0);
+  assert.ok(quiet.rms<.002);assert.ok(Math.max(...quiet.bands)>.25,'quiet audio remains visible');
+  const bandAt=hz=>Math.floor(Math.log(hz/45)/Math.log(16000/45)*44);
+  const near=hz=>Math.max(...twoTones.bands.slice(bandAt(hz)-1,bandAt(hz)+2));
+  assert.ok(near(4000)>.05,'the quieter tone remains detectable');
+  assert.ok(near(1000)>near(4000)*2.3,'20 dB quieter tone has a visibly shorter bar');
+  assert.ok(Math.max(...release.bands)<.03,'bars fall promptly after audio stops');
+});

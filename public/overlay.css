@@ -1,0 +1,178 @@
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent!important}
+body{font-family:"Segoe UI","Microsoft YaHei",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+#stage{display:flex;align-items:flex-start;width:100%;height:100%;padding:24px;overflow:hidden}
+body.preview #stage{align-items:center;justify-content:center;padding:12px}
+body.card #stage{padding:0}
+#frame{position:relative;flex-shrink:0}
+.widget{position:absolute;left:0;top:0;transform-origin:top left;line-height:1.2;color:var(--foreground,#fff);opacity:1;transition:opacity .4s;isolation:isolate}
+.widget.is-hidden{opacity:0}
+.widget [data-art]{display:block;width:100%;height:100%;object-fit:cover;max-width:none}
+.widget .copy{position:relative;min-width:0;display:flex;flex-direction:column;justify-content:center}
+.song-title,.song-artist,.song-album{white-space:nowrap;overflow:hidden;min-width:0;flex-shrink:0}
+[data-text]{display:inline-block;vertical-align:top;white-space:nowrap;max-width:none}
+.song-title{font-size:40px;font-weight:750;letter-spacing:-1px}
+.song-artist{font-size:32px;color:color-mix(in srgb,var(--foreground) 70%,transparent);margin-top:2px}
+.song-album{font-size:16px;opacity:.58;margin-top:5px}
+.music-badge{font-size:11px;letter-spacing:2px;color:var(--accent);margin:0 0 7px;white-space:nowrap}
+.music-badge span{font-size:8px;letter-spacing:1px;margin-left:12px;opacity:.5}
+.scrubber{display:flex;align-items:center;gap:12px;margin-top:12px;min-width:0}
+.time{font-size:14px;font-weight:600;opacity:.62;flex-shrink:0;font-variant-numeric:tabular-nums;min-width:36px}
+.time-right{text-align:right}
+.progress-track{flex:1;height:6px;background:#ffffff20;border-radius:20px;overflow:hidden;min-width:0}
+.progress-fill{height:100%;width:0;background:var(--accent);border-radius:inherit}
+.mini-wave{display:flex;gap:4px;align-items:center;position:absolute;right:8px;top:8px;height:24px}
+.mini-wave i{display:block;width:3px;height:14px;border-radius:3px;background:var(--accent);animation:meter .7s ease-in-out infinite alternate}
+.mini-wave i:nth-child(2){height:24px;animation-delay:-.25s}.mini-wave i:nth-child(3){height:10px;animation-delay:-.4s}.mini-wave i:nth-child(4){height:19px;animation-delay:-.55s}.mini-wave i:nth-child(5){height:12px;animation-delay:-.1s}
+.no-cover [data-role=cover],.no-cover [data-art],.no-artist [data-role=artist],.no-album [data-role=album],.no-badge [data-role=badge],.no-time .time,.no-progress [data-role=progress],.no-visualizer .mini-wave{display:none!important}
+.no-progress.no-time .scrubber{display:none}
+.unknown-duration [data-role=progress]{visibility:hidden}
+.no-animate *{animation:none!important;transition:none!important}
+.paused .record-disc,.paused .modern-disc svg,.paused .mini-wave i,.paused .pulse-wave i,.paused .marquee{animation-play-state:paused!important}
+.font-serif{font-family:Georgia,"Songti SC",serif}.font-mono{font-family:Consolas,"Courier New",monospace}
+.marquee{animation:scroll-copy var(--marquee-time,12s) linear infinite alternate}
+@keyframes scroll-copy{0%,18%{transform:translateX(0)}82%,100%{transform:translateX(var(--travel))}}
+@keyframes record-spin{to{transform:rotate(360deg)}}
+@keyframes meter{to{transform:scaleY(.35)}}
+@keyframes enter{0%{opacity:0;translate:0 9px}75%{translate:0 -2px}100%{opacity:1;translate:0 0}}
+.widget>div{animation:enter .5s ease-out both}
+.has-extras .song-title{font-size:32px}.has-extras .song-artist{font-size:24px}.has-extras .scrubber{margin-top:7px}
+.default-panel{position:absolute;left:10px;top:16px;width:700px;height:140px;border-radius:0 var(--radius) var(--radius) 0;background:var(--background);isolation:isolate}
+.default-panel>.album-backdrop{position:absolute;inset:0;border-radius:inherit;filter:blur(5px) brightness(.35);z-index:-1;clip-path:inset(0 round 0 var(--radius) var(--radius) 0)}
+.default-cover{position:absolute;left:-10px;top:-16px;width:170px;height:170px;z-index:2}
+.default-cover img{border-radius:var(--radius)}
+.default-panel .copy{position:absolute;left:190px;right:25px;top:0;height:140px}
+.default-panel .song-title{font-size:40px}.default-panel .song-artist{margin-top:0}
+.default-panel .scrubber{margin-top:6px}
+.skin-default.has-extras .song-title{font-size:30px}.skin-default.has-extras .song-artist{font-size:22px}
+.skin-default.no-cover .copy{left:26px}
+.experimental-panel{width:700px;height:200px;position:relative}
+.gradient-rail{position:absolute;left:0;right:0;height:14px;border-radius:15px;background:linear-gradient(80deg,var(--accent),#2dfd53)}
+.rail-top{top:0}.rail-bottom{bottom:0}
+.experimental-content{position:absolute;left:0;right:0;top:20px;height:160px;display:flex;align-items:center;gap:20px}
+.experimental-cover{width:130px;height:130px;flex-shrink:0}
+.experimental-content .copy{flex:1;height:160px;padding-right:15px}
+.experimental-content .song-artist{order:-1;font-size:32px;color:var(--foreground);margin:0 0 4px}
+.experimental-content .song-title{text-transform:none;font-size:40px}
+.experimental-content .music-badge{order:-2}
+.experimental-content .scrubber{margin-top:8px}
+.aurora-panel{position:absolute;left:0;right:0;top:12px;height:152px;display:flex;align-items:center;padding:0 22px 0 20px;gap:18px;border-radius:var(--radius);overflow:hidden;background:var(--background);box-shadow:0 20px 36px #0004}
+.aurora-panel>.album-backdrop{position:absolute;inset:0;filter:blur(36px) brightness(.4) saturate(1.35);transform:scale(1.2);z-index:0}
+.aurora-tint{position:absolute;inset:0;background:color-mix(in srgb,var(--background) 68%,transparent);border:1px solid #ffffff17;border-radius:inherit;box-shadow:inset 0 1px #ffffff12;z-index:1}
+.aurora-cover{width:112px;height:112px;flex-shrink:0;border-radius:10px;box-shadow:0 8px 22px #0006,0 0 0 1px #ffffff1a;z-index:2;overflow:hidden}
+.aurora-spine{height:72px;width:3px;border-radius:5px;background:var(--accent);opacity:.85;z-index:2;flex-shrink:0}
+.aurora-panel .copy{flex:1;z-index:2}
+.aurora-panel .song-title{font-size:36px;font-weight:800;letter-spacing:-1px;color:color-mix(in srgb,var(--accent) 26%,white);text-shadow:0 2px 20px #0008}
+.aurora-panel .song-artist{font-size:20px;font-weight:500;margin-top:6px;color:color-mix(in srgb,var(--foreground) 78%,transparent)}
+.aurora-edge{position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--accent);opacity:.55;z-index:2}
+.prism-panel{display:flex;width:700px;height:168px;border-radius:var(--radius);background:var(--background);border:1px solid #ffffff14;overflow:hidden;box-shadow:0 18px 38px #0004}
+.prism-cover{position:relative;width:252px;height:100%;flex-shrink:0;clip-path:polygon(0 0,100% 0,86% 100%,0 100%);overflow:hidden}
+.prism-slash{position:absolute;top:-4px;right:-1px;width:3px;height:calc(100% + 8px);transform-origin:top right;transform:rotate(11.86deg);background:linear-gradient(#a78bfa,#db2777);box-shadow:0 0 14px #7c3aed99}
+.prism-panel .copy{flex:1;padding:18px 28px 18px 12px}
+.prism-panel .song-title{font-size:34px;font-weight:800;text-transform:uppercase;letter-spacing:-.7px;color:color-mix(in srgb,var(--accent) 55%,white)}
+.prism-panel .song-artist{font-size:18px;font-weight:600;color:color-mix(in srgb,var(--foreground) 62%,transparent);margin-top:6px}
+.prism-panel .scrubber{margin-top:18px}
+.prism-panel .progress-track{height:6px;background:#16161c}
+.prism-panel .progress-fill{background:linear-gradient(90deg,#7c3aed,var(--accent),#db2777);box-shadow:0 0 10px #7c3aed80}
+.prism-panel .time{font-size:13px;opacity:.5}
+.pulse-panel{position:absolute;top:38px;left:18px;right:18px;height:140px;border-radius:var(--radius);overflow:hidden;background:linear-gradient(90deg,#5b4331b3 20%,#5b433140),var(--background);box-shadow:0 16px 35px #0004,inset 0 0 0 1px #ffffff0f}
+.pulse-panel>.pulse-light{position:absolute;top:-60px;left:-40px;width:320px;height:260px;filter:blur(42px) saturate(1.5);opacity:.4}
+.pulse-panel .copy{height:100%;padding:16px 24px 16px 180px}
+.pulse-panel .song-title{font-size:28px;font-weight:800;letter-spacing:-.3px}
+.pulse-panel .song-artist{font-size:18px;font-weight:600;margin-top:2px;color:var(--accent)}
+.pulse-cover{position:absolute;top:18px;left:36px;width:140px;height:140px;z-index:2}
+.pulse-cover img{position:absolute;inset:0;border-radius:14px}
+.pulse-cover .pulse-glow{filter:blur(20px) saturate(1.6);opacity:.7;transform:translateY(6px) scale(1.02)}
+.pulse-cover .pulse-front{box-shadow:0 12px 26px #0007,0 0 0 1px #ffffff1a}
+.pulse-scrubber{margin-top:14px;gap:14px}.pulse-scrubber>.progress-track{display:none}
+.pulse-wave{display:flex;align-items:center;flex:1;gap:3px;height:30px;min-width:0;color:var(--accent)}
+.pulse-wave i{flex:1;min-width:2px;border-radius:2px;background:linear-gradient(90deg,var(--accent) 0%,var(--accent) var(--played,0%),var(--remaining,#6b7280) var(--played,0%),var(--remaining,#6b7280) 100%);opacity:1;transform-origin:center;animation:pulse-wave-motion var(--wave-speed,.8s) ease-in-out var(--wave-delay,0s) infinite alternate}
+@keyframes pulse-wave-motion{0%{transform:scaleY(.22)}55%{transform:scaleY(1.12)}100%{transform:scaleY(.42)}}
+.skin-pulse.no-visualizer .pulse-wave i{animation:none}
+.skin-pulse.no-progress .pulse-wave{display:none}
+.skin-pulse.unknown-duration .pulse-wave{opacity:.25}
+.skin-pulse.no-cover .copy{padding-left:25px}
+.skin-pulse-progress.no-cover .copy{padding-left:25px}
+.skin-pulse.has-extras .song-title{font-size:24px}.skin-pulse.has-extras .song-artist{font-size:16px}.skin-pulse.has-extras .pulse-wave{height:20px}
+.record-panel{position:absolute;left:112px;top:32px;width:700px;height:200px;border-radius:var(--radius);background:var(--background)}
+.record-disc{position:absolute;left:-100px;top:-20px;width:230px;height:230px;border-radius:50%;box-shadow:0 0 0 12px var(--background);animation:record-spin 20s linear infinite;z-index:2}
+.record-image{border-radius:50%}
+.record-hole{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:40px;height:40px;border-radius:50%;background:#afb7c1}
+.record-panel .copy{position:absolute;left:165px;right:30px;top:0;height:200px}
+.record-panel .song-title{font-size:40px}.record-panel .song-artist{font-size:32px;font-weight:600;color:inherit;opacity:.9;margin-top:0}
+.dark-record .song-artist{opacity:.75}.skin-rotating.no-cover .copy,.skin-rotating-dark.no-cover .copy{left:30px}
+.modern-panel{height:70px;display:flex;width:700px;border-radius:var(--radius);background:color-mix(in srgb,var(--background) 70%,transparent);overflow:hidden}
+.modern-disc{display:flex;align-items:center;justify-content:center;width:85px;height:70px;flex-shrink:0;background:#0008}
+.modern-disc svg{width:40px;height:40px;animation:record-spin 5s linear infinite}
+.modern-panel .copy{flex:1;padding:0 20px;overflow:hidden}
+.song-line{display:flex;align-items:baseline;white-space:nowrap;overflow:hidden;gap:8px}
+.song-line .song-title,.song-line .song-artist,.song-separator{font-size:40px;font-weight:700;color:inherit;letter-spacing:-1px;margin:0;flex-shrink:0}
+.song-line .song-title{max-width:60%}.song-line .song-artist{flex-shrink:1}
+.skin-modern.no-artist .song-separator{display:none}
+.skin-modern.has-extras .song-line .song-title,.skin-modern.has-extras .song-line .song-artist,.skin-modern.has-extras .song-separator{font-size:24px}
+.skin-modern .song-album{font-size:10px;margin:1px 0}.skin-modern .music-badge{font-size:8px;margin:1px 0}
+.skin-modern .scrubber{margin:3px 0}.skin-modern .time{font-size:8px}.skin-modern .progress-track{height:2px}
+.modern-two-panel{display:flex;align-items:center;width:700px;height:160px;background:transparent}
+.modern-heading{width:160px;flex-shrink:0;display:flex;flex-direction:column;line-height:1}
+.modern-heading span{font-size:40px;font-weight:400}.modern-heading span:first-child{padding-left:60px}
+.modern-divider{height:160px;width:4px;background:var(--foreground);margin-left:20px;flex-shrink:0}
+.modern-two-panel .copy{flex:1;padding:0 0 0 25px}
+.modern-two-panel .song-title{font-size:48px;font-weight:600}
+.modern-two-panel .song-artist{font-size:48px;font-weight:200;margin-top:5px;color:inherit}
+.skin-modern-v2.has-extras .song-title{font-size:38px}.skin-modern-v2.has-extras .song-artist{font-size:30px}
+.transparent-panel{display:flex;align-items:center;gap:30px;width:700px;height:160px;background:transparent}
+.transparent-cover{width:140px;height:140px;flex-shrink:0}.transparent-cover img{border-radius:var(--radius)}
+.transparent-panel .copy{flex:1;padding-right:15px}
+.transparent-panel .song-title{font-size:48px;font-weight:750}
+.transparent-panel .song-artist{font-size:32px;color:var(--accent);margin-top:0}
+.redesign-panel{display:flex;align-items:center;width:700px;height:160px;border-radius:var(--radius);overflow:hidden;background:var(--background)}
+.redesign-cover{width:160px;height:160px;flex-shrink:0}
+.redesign-panel .copy{flex:1;padding:0 25px 0 28px}
+.redesign-panel .song-title{font-size:40px;color:var(--accent)}
+.redesign-panel .song-artist{font-size:32px;color:#aeaeae;margin-top:0}
+.rainbow-panel{position:absolute;left:0;top:20px;width:700px;height:180px;background:var(--background);border-radius:var(--radius)}
+.rainbow-cover{position:absolute;left:20px;top:-20px;width:180px;height:180px}
+.rainbow-cover img{border-radius:20px}
+.rainbow-panel .copy{position:absolute;left:230px;right:32px;top:0;height:180px}
+.rainbow-panel .song-title{font-size:40px;color:var(--foreground)}
+.rainbow-panel .song-artist{font-size:32px;color:color-mix(in srgb,var(--foreground) 75%,transparent);margin-top:0}
+.rainbow-panel .scrubber{margin-top:12px;gap:12px}
+.rainbow-panel .time{font-size:24px;opacity:1}.rainbow-panel .progress-track{height:16px;background:#0008}
+.rainbow-panel .progress-fill{background:var(--accent)}
+.skin-rainbow.no-cover .copy{left:30px}
+.aiden-panel{display:flex;align-items:center;width:700px;height:140px;background:var(--background)}
+.aiden-cover{width:140px;height:140px;flex-shrink:0}
+.aiden-panel .copy{flex:1;padding:0 24px 0 30px}
+.aiden-panel .song-artist{order:-1;color:var(--accent);font-size:30px;margin:0}
+.aiden-panel .song-title{font-size:48px;font-weight:750}
+.aiden-panel .music-badge{order:-2}
+.skin-aiden.has-extras .song-title{font-size:34px}.skin-aiden.has-extras .song-artist{font-size:23px}
+#overlay-error{font:14px system-ui;color:#ffb3a4;background:#261b1b;padding:12px 18px;border-radius:8px}
+@media(prefers-reduced-motion:reduce){
+  .widget,.widget *{animation:none!important;transition:none!important}
+  /* The explicit Pulse animation switch takes precedence for this small status meter.
+     Keep each subproperty separate so the playback pause rule still freezes it. */
+  .skin-pulse:not(.no-animate):not(.no-visualizer) .pulse-wave i{
+    animation-name:pulse-wave-motion!important;
+    animation-duration:var(--wave-speed,.8s)!important;
+    animation-timing-function:ease-in-out!important;
+    animation-delay:var(--wave-delay,0s)!important;
+    animation-iteration-count:infinite!important;
+    animation-direction:alternate!important;
+  }
+}
+.scrubber>.pulse-wave{display:none}
+.mode-spectrum .scrubber>.pulse-wave{display:flex}
+.mode-spectrum .scrubber>[data-role=progress]{display:none!important}
+.mode-progress .pulse-scrubber>.progress-track{display:block}
+.mode-progress .scrubber>.pulse-wave,.mode-none .scrubber{display:none!important}
+.skin-pulse-progress .progress-track{height:7px;background:#ffffff20}
+.skin-pulse-progress .progress-fill{background:var(--accent);box-shadow:0 0 9px color-mix(in srgb,var(--accent) 30%,transparent)}
+.skin-modern.mode-spectrum .song-line .song-title,.skin-modern.mode-spectrum .song-line .song-artist,.skin-modern.mode-spectrum .song-separator{font-size:24px}
+.skin-modern.mode-spectrum .pulse-wave{height:18px}
+.widget.real-spectrum.mode-spectrum .pulse-wave i{animation:none!important;transform:none!important;transition:height 40ms linear;max-height:30px}
+.widget.real-spectrum.no-visualizer .pulse-wave i,.widget.real-spectrum.no-animate .pulse-wave i{height:2px!important}
+.widget.mode-spectrum .mini-wave{display:none}
+.mode-spectrum.unknown-duration .pulse-wave{opacity:1}
+.widget.mode-progress .progress-track{background:var(--remaining,#6b7280)}
+.widget.mode-progress .progress-fill{background:var(--accent)}
