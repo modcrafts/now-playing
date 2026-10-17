@@ -12,10 +12,16 @@ test('small and moderate twitches keep a short transition in either direction',(
     assert.equal(smallChangeTransitionMs(10,10-distance),48);
   }
 });
-test('quiet onsets, silence and large movements have no added transition',()=>{
+test('quiet onsets, near-silent levels and large movements have no added transition',()=>{
   assert.equal(smallChangeTransitionMs(2,2.000028),0);
   assert.equal(smallChangeTransitionMs(2,2.01),0);
+  assert.equal(smallChangeTransitionMs(5,2.01),0);
+  assert.equal(smallChangeTransitionMs(5,2.5),0);
+  assert.equal(smallChangeTransitionMs(2.01,5),0);
+  assert.equal(smallChangeTransitionMs(2.5,5),0);
   assert.equal(smallChangeTransitionMs(10,2),0);
+  assert.equal(smallChangeTransitionMs(10,17),0);
+  assert.equal(smallChangeTransitionMs(17,10),0);
   assert.equal(smallChangeTransitionMs(10,20),0);
   assert.equal(smallChangeTransitionMs(20,10),0);
   assert.equal(smallChangeTransitionMs(NaN,10),0);
