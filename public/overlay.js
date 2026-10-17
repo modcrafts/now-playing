@@ -1,6 +1,6 @@
 import {DEFAULTS,getSkin,skinDefaults,migrateConfig,visualizationMode} from '/shared.js';
 import {buildSkin} from '/skin-renderer.js';
-import {loadArtworkColor,readableArtworkColor} from '/artwork-color.js';
+import {loadArtworkColor,contrastingArtworkColor} from '/artwork-color.js';
 const params=new URLSearchParams(location.search);
 const demo=params.get('preview')==='1',card=params.get('card')==='1',dashboard=params.get('dashboard')==='1';
 const profileId=params.get('profile')||'default';
@@ -12,7 +12,7 @@ let config={...DEFAULTS},track,view,activeSkin,streamAlive=true,pauseAt,lastArt=
 let spectrumEvents=null,spectrumFrame=null,spectrumPaintPending=false;
 let paletteKey='',paletteRequested=false,paletteVersion=0,artworkColor=null;
 function applyAccent(){
-  widget.style.setProperty('--accent',config.accentFromArtwork&&artworkColor?readableArtworkColor(artworkColor,config.background):config.accent);
+  widget.style.setProperty('--accent',config.accentFromArtwork&&artworkColor?contrastingArtworkColor(artworkColor,config.background,config.accent):config.accent);
 }
 function updateArtworkAccent(){
   if(paletteKey!==lastArt){paletteKey=lastArt;paletteRequested=false;artworkColor=null;paletteVersion++;}
