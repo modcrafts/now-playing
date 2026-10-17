@@ -1,6 +1,6 @@
 # Development
 
-[English README](../README.md) · [中文说明](../README.zh-CN.md)
+[中文说明](../README.md) · [English README](../README.en.md)
 
 ## Stack
 
