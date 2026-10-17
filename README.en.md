@@ -15,13 +15,11 @@ Currently supports the **official Apple Music desktop app**. No extra music play
 - **Cover-derived accents** that stay distinct from the artwork, plus customizable colors, fonts, sizes, and component visibility.
 - **Quick title transitions** — a short, blurred slide when the song changes, with scrolling for long titles.
 - **Independent OBS scenes** with stable URLs, automatic saving, and configuration import/export.
-- **Local operation** — song data and audio analysis stay on your computer; the server listens on `127.0.0.1`.
+- **Local operation** — song data and audio analysis stay on your computer.
 
 ## Preview
 
-Title changes take about 230 ms, with movement limited to 16 px inside the title area.
-
-![A song title blurs and slides left as the next title enters from the right](docs/images/title-transition.gif)
+![Pulse skin with an animated audio spectrum](docs/images/spectrum.gif)
 
 <details>
 <summary><strong>Explore all 14 skins</strong></summary>
@@ -32,7 +30,7 @@ Default · Experimental · Aurora · Prism · Pulse · Pulse Progress · Rotatin
 
 </details>
 
-Screenshots use the included demo artwork. Spectrum animation in demo previews is simulated; live previews and OBS use captured audio.
+Previews use demo content; live mode follows captured audio.
 
 ## Get started
 
@@ -75,18 +73,18 @@ Keep the server running while streaming. The dashboard tab can be closed. Press 
 | Scene profiles | Save separate designs and browser-source URLs for different OBS scenes. |
 | Motion | Enable or disable animations, including title changes. |
 
-Open [the skin gallery](http://127.0.0.1:3963/skins.html) to compare every design. Settings and artwork cache are stored in `.runtime/`, which is excluded from Git.
+Open [the skin gallery](http://127.0.0.1:3963/skins.html) to compare every design. Your settings are saved locally.
 
 ## Troubleshooting
 
-- **No song information:** start playback in the official Apple Music app, then check the dashboard's **音乐连接** (Music connection) page. Metadata depends on what Apple Music publishes to Windows.
-- **No spectrum:** select the real spectrum mode and enable **使用实时歌曲** (Use live song) in the preview. Check the audio source and signal status; unsupported capture or silent audio is not replaced with a fake live animation.
+- **No song information:** start playback in the official Apple Music app, then check the dashboard's **音乐连接** (Music connection) page.
+- **No spectrum:** select the real spectrum mode and enable **使用实时歌曲** (Use live song) in the preview. Check the audio source and signal status.
 - **Changes do not appear in OBS:** restart the server after updating the code, then refresh the browser source. Use the recommended canvas size if the overlay is cropped.
 
 Lyrics and animated Apple Music artwork are not currently supported.
 
 ## Development
 
-Built with vanilla JavaScript, Node.js, PowerShell, and C#. Run `node --test` to check the project. See the [developer guide](docs/DEVELOPMENT.md) for the capture pipeline and diagnostics.
+See the [developer guide](docs/DEVELOPMENT.md) to contribute or troubleshoot the project.
 
 Visual inspiration: [nowplaying.site](https://nowplaying.site/#features). These skins are independently implemented.

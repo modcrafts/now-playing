@@ -11,7 +11,7 @@ Windows PowerShell 5.1 bridges the official Apple Music app to the server:
 - `bridge/media.ps1` reads Windows media sessions, metadata, artwork, playback position, and playback controls.
 - `bridge/audio.ps1` compiles `bridge/AudioCapture.cs` for WASAPI process or system-output loopback. The browser receives 44 FFT band levels, never raw audio.
 
-The audio pipeline uses a 2048-sample window and targets a 16 ms publication interval; the actual interval depends on device callbacks. Slow clients skip obsolete spectrum frames. Session and endpoint checks run outside the capture loop.
+The audio pipeline uses a 2048-sample window and targets a 16 ms publication interval; the actual interval depends on device callbacks. Slow clients skip obsolete spectrum frames. Session and endpoint checks run outside the capture loop. Display-side continuous adaptive smoothing follows small changes while damping fast reversals. There is no deadband or added noise gate; zero-to-signal edges and silence remain immediate.
 
 ## Project map
 
@@ -24,7 +24,8 @@ The audio pipeline uses a 2048-sample window and targets a 16 ms publication int
 | `public/skin-renderer.js` | Individual skin layouts. |
 | `public/overlay.js` | Playback rendering and live updates. |
 | `public/artwork-color.js` | Cover palette extraction and contrasting accent colors. |
-| `public/title-transition.js` | Bounded title transitions and rapid-skip cleanup. |
+| `public/title-transition.js` | Isolated title text transitions and rapid-skip cleanup. |
+| `public/spectrum-smoothing.js` | Continuous de-jittering while preserving quiet onsets. |
 
 ## Run and test
 

@@ -3,20 +3,22 @@ import assert from 'node:assert/strict';
 import {createTitleTransition} from '../public/title-transition.js';
 
 class Classes extends Set {remove(name){this.delete(name);}}
-globalThis.getComputedStyle=node=>({transform:'none',filter:'none',opacity:node.opacity??'1'});
+globalThis.getComputedStyle=node=>({transform:'none',filter:'none',opacity:node.opacity??'1',color:'rgb(255, 255, 255)',textShadow:'none'});
+globalThis.requestAnimationFrame=()=>0;globalThis.cancelAnimationFrame=()=>{};
 function fixture() {
-  const calls=[],host={clientWidth:360,classList:new Classes(),children:[],append(node){this.children.push(node);}};
+  const calls=[],blurs=[0,1].map(()=>({value:'0',setAttribute(key,value){this.value=value;},getAttribute(){return this.value;}}));
+  const host={clientWidth:360,classList:new Classes(),children:[],append(node){this.children.push(node);},querySelector:selector=>blurs[selector.includes('-in')?0:1]};
   const makeLayer=(value='')=>{
-    const text={textContent:value,classList:new Classes(),style:{}};
+    const text={textContent:value,classList:new Classes(),style:{removeProperty(key){delete this[key];}}};
     const layer={parentElement:host,classList:new Classes(),opacity:'1',querySelector:()=>text,setAttribute(){},
       remove(){host.children=host.children.filter(node=>node!==this);},cloneNode(){return makeLayer(text.textContent);},
       animate(keyframes,options){
         let resolve,reject;
-        const animation={finished:new Promise((yes,no)=>{resolve=yes;reject=no;}),resolve:()=>resolve(),cancel(){this.cancelled=true;reject(Error('cancelled'));}};
-        calls.push({keyframes,options,animation});return animation;
+        const animation={effect:{getComputedTiming:()=>({progress:.5})},finished:new Promise((yes,no)=>{resolve=yes;reject=no;}),resolve:()=>resolve(),cancel(){this.cancelled=true;reject(Error('cancelled'));}};
+        calls.push({keyframes,options,animation,target:this});return animation;
       },
     };
-    text.parentElement=layer;return layer;
+    text.parentElement=layer;text.animate=layer.animate;return layer;
   };
   const layer=makeLayer(),text=layer.querySelector();
   return {host,layer,text,calls,transition:createTitleTransition(text)};
@@ -36,6 +38,9 @@ test('title exit and entrance are quick and bounded, and clean up their temporar
   const distance=frame=>Math.abs(Number(frame.transform.match(/translateX\((-?[\d.]+)px\)/)[1]));
   assert.ok(distance(exit.keyframes[1])<=16);assert.ok(distance(enter.keyframes[0])<=16);
   assert.equal(exit.keyframes[1].opacity,0);assert.equal(enter.keyframes[1].opacity,1);
+  assert.ok(calls.slice(0,2).every(call=>call.keyframes.every(frame=>!('filter' in frame))),'motion wrappers do not blur');
+  assert.equal(host.children[0].querySelector().style.filter,'url("#title-ink-out")');
+  assert.equal(host.children[0].querySelector().parentElement.parentElement,host,'blur stays inside the title');
   for(const call of calls)call.animation.resolve();
   await new Promise(resolve=>setImmediate(resolve));
   assert.equal(host.children.length,0);assert.equal(host.classList.has('title-changing'),false);

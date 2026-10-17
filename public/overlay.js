@@ -2,6 +2,7 @@ import {DEFAULTS,getSkin,skinDefaults,migrateConfig,visualizationMode} from '/sh
 import {buildSkin} from '/skin-renderer.js';
 import {loadArtworkColor,contrastingArtworkColor} from '/artwork-color.js';
 import {createTitleTransition} from '/title-transition.js';
+import {createSpectrumSmoother} from '/spectrum-smoothing.js';
 const params=new URLSearchParams(location.search);
 const demo=params.get('preview')==='1',card=params.get('card')==='1',dashboard=params.get('dashboard')==='1';
 const profileId=params.get('profile')||'default';
@@ -11,6 +12,7 @@ const widget=document.querySelector('#widget'),frame=document.querySelector('#fr
 const error=document.querySelector('#overlay-error');
 let config={...DEFAULTS},track,view,activeSkin,streamAlive=true,pauseAt,lastArt='',lastCopy='';
 let spectrumEvents=null,spectrumFrame=null,spectrumPaintPending=false;
+const spectrumSmoother=createSpectrumSmoother();
 let titleTransition=null;
 let paletteKey='',paletteRequested=false,paletteVersion=0,artworkColor=null;
 function applyAccent(){
@@ -31,8 +33,10 @@ function drawSpectrum(data){
   spectrumFrame=data;
   if(!view||visualizationMode(config)!=='spectrum'||demo)return;
   const fresh=data&&Date.now()-(data.generatedAt??data.receivedAt)<150&&streamAlive&&track?.playing&&config.animate&&config.showVisualizer;
+  if(!fresh)spectrumSmoother.reset();
+  const levels=fresh?spectrumSmoother.update(data.bands):[];
   view.bars.forEach((bar,i)=>{
-    const level=fresh?Math.max(0,Math.min(1,data.bands[i]||0)):0;
+    const level=levels[i]||0;
     // Increase sensitivity smoothly, preserving differences instead of clipping
     // every loud band to the same height.
     const height=1-Math.pow(1-level,config.spectrumGain);
