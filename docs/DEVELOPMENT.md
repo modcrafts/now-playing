@@ -13,6 +13,8 @@ Windows PowerShell 5.1 bridges the official Apple Music app to the server:
 
 The audio pipeline uses a 2048-sample window and targets a 16 ms publication interval; the actual interval depends on device callbacks. Slow clients skip obsolete spectrum frames. Session and endpoint checks run outside the capture loop. The browser uses short height transitions for small and moderate visual changes, tapering their duration continuously to zero as movements grow to avoid a hard cutoff. FFT values, sensitivity and target heights are untouched. Quiet onsets, near-silent levels and large movements render immediately; there is no signal filter, direction detector, deadband or added noise gate.
 
+The overlay extrapolates playback progress between media reports. During uninterrupted playback, backward corrections of up to two seconds hold the displayed position until the source catches up, without accumulating an offset. Track/session changes, pauses, resumes, returning to the beginning and larger backward seeks resynchronize immediately. Backward seeks within that two-second window during playback are treated as report corrections because the media bridge does not provide a separate seek notification.
+
 ## Project map
 
 | Path | Responsibility |
@@ -23,6 +25,7 @@ The audio pipeline uses a 2048-sample window and targets a 16 ms publication int
 | `public/shared.js` | Skin catalog, defaults, and configuration migration. |
 | `public/skin-renderer.js` | Individual skin layouts. |
 | `public/overlay.js` | Playback rendering and live updates. |
+| `public/playback-clock.js` | Stable playback progress across small media-report corrections. |
 | `public/artwork-color.js` | Cover palette extraction and contrasting accent colors. |
 | `public/title-transition.js` | Isolated title text transitions and rapid-skip cleanup. |
 | `public/spectrum-smoothing.js` | Transition duration for small visual bar-height changes. |

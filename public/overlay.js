@@ -3,6 +3,7 @@ import {buildSkin} from '/skin-renderer.js';
 import {loadArtworkColor,contrastingArtworkColor} from '/artwork-color.js';
 import {createTitleTransition} from '/title-transition.js';
 import {smallChangeTransitionMs} from '/spectrum-smoothing.js';
+import {createPlaybackClock} from '/playback-clock.js';
 const params=new URLSearchParams(location.search);
 const demo=params.get('preview')==='1',card=params.get('card')==='1',dashboard=params.get('dashboard')==='1';
 const profileId=params.get('profile')||'default';
@@ -13,6 +14,7 @@ const error=document.querySelector('#overlay-error');
 let config={...DEFAULTS},track,view,activeSkin,streamAlive=true,pauseAt,lastArt='',lastCopy='';
 let spectrumEvents=null,spectrumFrame=null,spectrumPaintPending=false;
 let titleTransition=null;
+const playbackClock=createPlaybackClock();
 let paletteKey='',paletteRequested=false,paletteVersion=0,artworkColor=null;
 function applyAccent(){
   widget.style.setProperty('--accent',config.accentFromArtwork&&artworkColor?contrastingArtworkColor(artworkColor,config.background,config.accent):config.accent);
@@ -123,8 +125,7 @@ function render(){
   const art=track.artwork==='demo'?'/artwork.svg':track.artwork?'/api/artwork?v='+encodeURIComponent(track.artwork):'/placeholder.svg';
   if(art!==lastArt){lastArt=art;for(const img of view.art)img.src=art;}
   updateArtworkAccent();
-  const elapsed=track.playing?Math.max(0,(Date.now()-track.updatedAt)/1000)*(track.rate||1):0;
-  const position=Math.min(track.duration||0,(track.position||0)+elapsed),ratio=track.duration?position/track.duration:0;
+  const position=playbackClock.position(streamAlive?track:null),ratio=track.duration?position/track.duration:0;
   widget.classList.toggle('unknown-duration',!track.duration);
   if(view.fill)view.fill.style.width=ratio*100+'%';
   const time=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
@@ -150,6 +151,6 @@ else{
   events.addEventListener('snapshot',e=>{const data=JSON.parse(e.data);streamAlive=true;track=data.track;updateProfiles(data.profiles);render();});
   events.addEventListener('state',e=>{streamAlive=true;if(!demo)track=JSON.parse(e.data).track;render();});
   events.addEventListener('profiles',e=>updateProfiles(JSON.parse(e.data)));
-  events.onerror=()=>{if(!demo){streamAlive=false;render();}};
+  events.onerror=()=>{if(!demo){streamAlive=false;playbackClock.reset();render();}};
 }
 setInterval(render,200);
