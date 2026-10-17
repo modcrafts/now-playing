@@ -37,7 +37,7 @@ function drawSpectrum(data){
     // Increase sensitivity smoothly, preserving differences instead of clipping
     // every loud band to the same height.
     const height=2+(1-Math.pow(1-level,config.spectrumGain))*28;
-    bar.style.setProperty('--spectrum-transition',smallChangeTransitionMs(Number.parseFloat(bar.style.height),height)+'ms');
+    bar.style.setProperty('--spectrum-transition',smallChangeTransitionMs(Number.parseFloat(bar.style.height),height,config.spectrumSmoothing)+'ms');
     bar.style.height=height+'px';
   });
 }
@@ -45,7 +45,7 @@ function connectSpectrum(){
   const needed=!demo&&visualizationMode(config)==='spectrum'&&config.showVisualizer&&config.animate;
   widget.classList.toggle('real-spectrum',!demo&&visualizationMode(config)==='spectrum');
   if(!needed){spectrumEvents?.close();spectrumEvents=null;drawSpectrum(null);return;}
-  if(spectrumEvents)return;
+  if(spectrumEvents){drawSpectrum(spectrumFrame);return;}
   drawSpectrum(null);
   spectrumEvents=new EventSource('/api/spectrum');
   spectrumEvents.addEventListener('spectrum',e=>{

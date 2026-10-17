@@ -3,7 +3,7 @@ export const DEFAULTS = {
   width:700, scale:1, opacity:100, radius:30, font:'system',
   showCover:true, showArtist:true, showAlbum:false, showProgress:false,
   showTime:false, showBadge:false, showVisualizer:false,
-  animate:true, hidePaused:false, hideDelay:5, alignment:'left', visualization:'default', spectrumGain:1,
+  animate:true, hidePaused:false, hideDelay:5, alignment:'left', visualization:'default', spectrumGain:1, spectrumSmoothing:true,
 };
 // Bounds include every overhanging cover and disc.
 export const SKINS = [
@@ -25,7 +25,7 @@ export const SKINS = [
 export const getSkin = id => SKINS.find(skin => skin.id === id) || SKINS[0];
 export function skinDefaults(id) { return {...DEFAULTS,skin:getSkin(id).id,...getSkin(id).preset}; }
 export function applySkin(config,id) {
-  return {...config,...skinDefaults(id),...Object.fromEntries(['width','scale','opacity','font','hidePaused','hideDelay','alignment','animate','spectrumGain','accentFromArtwork'].filter(k=>k in config).map(k=>[k,config[k]]))};
+  return {...config,...skinDefaults(id),...Object.fromEntries(['width','scale','opacity','font','hidePaused','hideDelay','alignment','animate','spectrumGain','spectrumSmoothing','accentFromArtwork'].filter(k=>k in config).map(k=>[k,config[k]]))};
 }
 export function migrateConfig(config={}) { return config.layoutVersion===2 ? {...skinDefaults(config.skin),...config} : applySkin(config,config.skin); }
 export function outputSize(config) {

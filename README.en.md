@@ -68,6 +68,7 @@ Keep the server running while streaming. The dashboard tab can be closed. Press 
 | Setting | What it does |
 | --- | --- |
 | Display mode | Choose skin default, real audio spectrum, progress bar, or off. |
+| Spectrum smoothing | Soften abrupt bar movements; switch it off to compare the direct response. |
 | Cover-derived accent | Generate a softer contrasting accent from the current cover. |
 | Audio source | Capture Apple Music only, all sound on the default output, or nothing. |
 | Scene profiles | Save separate designs and browser-source URLs for different OBS scenes. |
