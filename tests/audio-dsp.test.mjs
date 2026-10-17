@@ -7,7 +7,7 @@ const exec=promisify(execFile);
 test('native FFT places a 1kHz sine in its frequency band and decays to zero on silence',{skip:process.platform!=='win32'},async()=>{
   const file=fileURLToPath(new URL('../bridge/audio.ps1',import.meta.url));
   const {stdout}=await exec('powershell.exe',['-NoLogo','-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-File',file,'-SelfTest'],{windowsHide:true,timeout:20000});
-  const [tone,silence,quiet,twoTones,release]=stdout.trim().split(/\r?\n/).map(line=>JSON.parse(line));
+  const [tone,silence,quiet,twoTones,release,transient]=stdout.trim().split(/\r?\n/).map(line=>JSON.parse(line));
   assert.equal(tone.bands.length,44);assert.ok(Math.abs(tone.rms-Math.SQRT1_2*.5)<.001);
   const peak=tone.bands.indexOf(Math.max(...tone.bands));assert.ok(peak>=22&&peak<=24);
   assert.ok(tone.bands[peak]>.5);assert.ok(tone.bands.every(n=>n>=0&&n<=1));
@@ -18,4 +18,8 @@ test('native FFT places a 1kHz sine in its frequency band and decays to zero on 
   assert.ok(near(4000)>.05,'the quieter tone remains detectable');
   assert.ok(near(1000)>near(4000)*2.3,'20 dB quieter tone has a visibly shorter bar');
   assert.ok(Math.max(...release.bands)<.03,'bars fall promptly after audio stops');
+  const steady=Math.max(...transient.attack.at(-1).bands);
+  assert.ok(Math.max(...transient.attack[1].bands)>steady*.5,'a 20 ms onset is already clearly visible');
+  assert.ok(Math.max(...transient.release.at(-1).bands)<steady*.05,'tone disappears within 80 ms of feeding silence');
+  assert.ok(Math.abs(Date.now()-tone.generatedAt)<10000,'producer timestamps allow stale queued frames to be discarded');
 });

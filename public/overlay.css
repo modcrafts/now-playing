@@ -170,7 +170,7 @@ body.card #stage{padding:0}
 .skin-pulse-progress .progress-fill{background:var(--accent);box-shadow:0 0 9px color-mix(in srgb,var(--accent) 30%,transparent)}
 .skin-modern.mode-spectrum .song-line .song-title,.skin-modern.mode-spectrum .song-line .song-artist,.skin-modern.mode-spectrum .song-separator{font-size:24px}
 .skin-modern.mode-spectrum .pulse-wave{height:18px}
-.widget.real-spectrum.mode-spectrum .pulse-wave i{animation:none!important;transform:none!important;transition:height 40ms linear;max-height:30px}
+.widget.real-spectrum.mode-spectrum .pulse-wave i{animation:none!important;transform:none!important;transition:none;max-height:30px}
 .widget.real-spectrum.no-visualizer .pulse-wave i,.widget.real-spectrum.no-animate .pulse-wave i{height:2px!important}
 .widget.mode-spectrum .mini-wave{display:none}
 .mode-spectrum.unknown-duration .pulse-wave{opacity:1}

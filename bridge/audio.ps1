@@ -23,6 +23,23 @@ try {
         $mixed.Clear()
         for ($i=0;$i -lt 8;$i++) { $release=$mixed.Json() }
         [Console]::WriteLine($release)
+        # Feed real 10 ms chunks so the regression covers the analysis window
+        # as well as the smoothing, rather than only clearing the sample ring.
+        $transient=New-Object NowPlayingAudio.Spectrum(44100)
+        $attackFrames=@()
+        for ($chunk=0;$chunk -lt 8;$chunk++) {
+            for ($j=0;$j -lt 441;$j++) {
+                $sampleIndex=$chunk*441+$j
+                $transient.AddSample(0.5*[Math]::Sin(2*[Math]::PI*1000*$sampleIndex/44100))
+            }
+            $attackFrames+=($transient.Json() | ConvertFrom-Json)
+        }
+        $releaseFrames=@()
+        for ($chunk=0;$chunk -lt 8;$chunk++) {
+            for ($j=0;$j -lt 441;$j++) { $transient.AddSample(0) }
+            $releaseFrames+=($transient.Json() | ConvertFrom-Json)
+        }
+        [Console]::WriteLine((@{attack=$attackFrames;release=$releaseFrames} | ConvertTo-Json -Depth 5 -Compress))
     } else { [NowPlayingAudio.Capture]::Run($Mode,$Seconds) }
 } catch {
     [Console]::WriteLine((@{type='audio-status';status='error';source=$Mode;message=$_.Exception.Message} | ConvertTo-Json -Compress))

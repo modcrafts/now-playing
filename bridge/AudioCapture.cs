@@ -160,6 +160,7 @@ namespace NowPlayingAudio
         {
             IAudioClient client=null; IAudioCaptureClient capture=null; IntPtr formatPtr=IntPtr.Zero;
             AutoResetEvent ready=new AutoResetEvent(false); bool started=false;
+            ManualResetEvent monitorStop=new ManualResetEvent(false); Thread monitor=null; int endpointChanged=0;
             try
             {
                 string deviceId=null;
@@ -183,11 +184,27 @@ namespace NowPlayingAudio
                 Check(client.Start()); started=true;
                 Spectrum fft=new Spectrum((int)format.Rate);
                 byte[] bytes=new byte[Math.Max(65536,(int)format.Rate*format.Align/5)];
-                Stopwatch output=Stopwatch.StartNew(),checkProcess=Stopwatch.StartNew(),lastPacket=Stopwatch.StartNew();
+                Stopwatch output=Stopwatch.StartNew(),lastPacket=Stopwatch.StartNew();
                 Status("capturing",mode,mode=="apple"?"Apple Music process loopback":"Default output device loopback",pid,(int)format.Rate);
+                // Session enumeration can take hundreds of milliseconds. Keep it
+                // off the thread that drains audio packets and publishes FFTs.
+                monitor=new Thread(delegate() {
+                    int monitorInit=CoInitializeEx(IntPtr.Zero,0);
+                    try {
+                        while(!monitorStop.WaitOne(1000)) {
+                            if(mode=="apple"?ApplePid()!=pid:DefaultDeviceId()!=deviceId) {
+                                Interlocked.Exchange(ref endpointChanged,1); break;
+                            }
+                        }
+                    }
+                    catch { Interlocked.Exchange(ref endpointChanged,1); }
+                    finally { if(monitorInit>=0) CoUninitialize(); }
+                });
+                monitor.IsBackground=true; monitor.SetApartmentState(ApartmentState.MTA); monitor.Start();
                 while(seconds<=0 || lifetime.Elapsed.TotalSeconds<seconds)
                 {
-                    ready.WaitOne(40);
+                    if(Interlocked.CompareExchange(ref endpointChanged,0,0)!=0) return;
+                    ready.WaitOne(10);
                     uint packet; Check(capture.GetNextPacketSize(out packet));
                     while(packet>0)
                     {
@@ -205,22 +222,17 @@ namespace NowPlayingAudio
                         finally { Check(capture.ReleaseBuffer(frames)); }
                         Check(capture.GetNextPacketSize(out packet));
                     }
-                    if(output.ElapsedMilliseconds>=45)
+                    if(output.ElapsedMilliseconds>=16)
                     {
                         // Drivers can stop sending packets during silence; don't retain the last spectrum.
-                        if(lastPacket.ElapsedMilliseconds>160) fft.Clear();
-                        Console.WriteLine(fft.Json()); output.Restart();
-                    }
-                    if(checkProcess.ElapsedMilliseconds>1000)
-                    {
-                        if(mode=="apple" && ApplePid()!=pid) return;
-                        if(mode=="system" && DefaultDeviceId()!=deviceId) return;
-                        checkProcess.Restart();
+                        if(lastPacket.ElapsedMilliseconds>50) fft.Clear();
+                        Console.WriteLine(fft.Json()); Console.Out.Flush(); output.Restart();
                     }
                 }
             }
             finally
             {
+                monitorStop.Set(); if(monitor!=null&&monitor.IsAlive) monitor.Join(); monitorStop.Dispose();
                 if(started) { try { client.Stop(); } catch {} }
                 if(capture!=null) Marshal.ReleaseComObject(capture);
                 if(client!=null) Marshal.ReleaseComObject(client);
@@ -231,7 +243,7 @@ namespace NowPlayingAudio
     }
     public sealed class Spectrum
     {
-        const int N=4096, Count=44;
+        const int N=2048, Count=44;
         readonly int rate; readonly double[] ring=new double[N], re=new double[N], im=new double[N], smooth=new double[Count]; int index;
         public Spectrum(int sampleRate) { rate=sampleRate; }
         public void Clear() { Array.Clear(ring,0,N); }
@@ -296,7 +308,7 @@ namespace NowPlayingAudio
                 // their visual separation without adding any artificial motion.
                 target=Math.Pow(target,2.2);
                 if(rms<0.000015) target=0;
-                smooth[b]+=(target-smooth[b])*(target>smooth[b]?.88:.40);
+                smooth[b]+=(target-smooth[b])*(target>smooth[b]?1:.55);
                 if(smooth[b]<.001) smooth[b]=0;
                 result[b]=smooth[b];
             }
@@ -306,7 +318,8 @@ namespace NowPlayingAudio
         {
             double rms,peak; double[] bands=Levels(out rms,out peak); StringBuilder sb=new StringBuilder("{\"type\":\"spectrum\",\"bands\":[");
             for(int i=0;i<bands.Length;i++) { if(i>0) sb.Append(','); sb.Append(bands[i].ToString("0.000",CultureInfo.InvariantCulture)); }
-            sb.Append("],\"rms\":").Append(rms.ToString("0.000000",CultureInfo.InvariantCulture)).Append(",\"peak\":").Append(peak.ToString("0.000000",CultureInfo.InvariantCulture)).Append('}');
+            long generatedAt=(DateTime.UtcNow.Ticks-621355968000000000L)/10000;
+            sb.Append("],\"rms\":").Append(rms.ToString("0.000000",CultureInfo.InvariantCulture)).Append(",\"peak\":").Append(peak.ToString("0.000000",CultureInfo.InvariantCulture)).Append(",\"generatedAt\":").Append(generatedAt).Append('}');
             return sb.ToString();
         }
     }

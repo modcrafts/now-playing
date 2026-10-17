@@ -8,11 +8,11 @@ document.body.classList.toggle('card',card);
 const widget=document.querySelector('#widget'),frame=document.querySelector('#frame'),stage=document.querySelector('#stage');
 const error=document.querySelector('#overlay-error');
 let config={...DEFAULTS},track,view,activeSkin,streamAlive=true,pauseAt,lastArt='',lastCopy='';
-let spectrumEvents=null,spectrumFrame=null;
+let spectrumEvents=null,spectrumFrame=null,spectrumPaintPending=false;
 function drawSpectrum(data){
   spectrumFrame=data;
   if(!view||visualizationMode(config)!=='spectrum'||demo)return;
-  const fresh=data&&Date.now()-data.receivedAt<1000&&streamAlive&&track?.playing&&config.animate&&config.showVisualizer;
+  const fresh=data&&Date.now()-(data.generatedAt??data.receivedAt)<150&&streamAlive&&track?.playing&&config.animate&&config.showVisualizer;
   view.bars.forEach((bar,i)=>{
     const level=fresh?Math.max(0,Math.min(1,data.bands[i]||0)):0;
     // Increase sensitivity smoothly, preserving differences instead of clipping
@@ -28,7 +28,14 @@ function connectSpectrum(){
   if(spectrumEvents)return;
   drawSpectrum(null);
   spectrumEvents=new EventSource('/api/spectrum');
-  spectrumEvents.addEventListener('spectrum',e=>{const data=JSON.parse(e.data);drawSpectrum({...data,receivedAt:Date.now()});});
+  spectrumEvents.addEventListener('spectrum',e=>{
+    const data=JSON.parse(e.data),now=Date.now();
+    if(now-(data.generatedAt??data.at??now)>150)return;
+    spectrumFrame={...data,receivedAt:now};
+    if(spectrumPaintPending)return;
+    spectrumPaintPending=true;
+    requestAnimationFrame(()=>{spectrumPaintPending=false;drawSpectrum(spectrumFrame);});
+  });
   spectrumEvents.onerror=()=>drawSpectrum(null);
 }
 const demoStart=Date.now();
@@ -92,7 +99,7 @@ function render(){
   if(view.position)view.position.textContent=time(position);if(view.duration)view.duration.textContent=track.duration?time(track.duration):'--:--';
   const boundary=ratio*view.bars.length;
   view.bars.forEach((bar,i)=>bar.style.setProperty('--played',Math.max(0,Math.min(1,boundary-i))*100+'%'));
-  if(!demo&&visualizationMode(config)==='spectrum'&&(!track.playing||!spectrumFrame||Date.now()-spectrumFrame.receivedAt>1000))drawSpectrum(null);
+  if(!demo&&visualizationMode(config)==='spectrum'&&(!track.playing||!spectrumFrame||Date.now()-(spectrumFrame.generatedAt??spectrumFrame.receivedAt)>150))drawSpectrum(null);
 }
 function updateProfiles(profiles){
   const profile=profiles.find(p=>p.id===profileId);
