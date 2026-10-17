@@ -125,14 +125,26 @@ function render(){
   const art=track.artwork==='demo'?'/artwork.svg':track.artwork?'/api/artwork?v='+encodeURIComponent(track.artwork):'/placeholder.svg';
   if(art!==lastArt){lastArt=art;for(const img of view.art)img.src=art;}
   updateArtworkAccent();
+  renderProgress();
+  if(!demo&&visualizationMode(config)==='spectrum'&&(!track.playing||!spectrumFrame||Date.now()-(spectrumFrame.generatedAt??spectrumFrame.receivedAt)>150))drawSpectrum(null);
+}
+function renderProgress(){
+  if(!track||!view)return;
   const position=playbackClock.position(streamAlive?track:null),ratio=track.duration?position/track.duration:0;
   widget.classList.toggle('unknown-duration',!track.duration);
   if(view.fill)view.fill.style.width=ratio*100+'%';
   const time=s=>Math.floor(s/60)+':'+String(Math.floor(s%60)).padStart(2,'0');
-  if(view.position)view.position.textContent=time(position);if(view.duration)view.duration.textContent=track.duration?time(track.duration):'--:--';
+  if(view.position&&view.position.textContent!==time(position))view.position.textContent=time(position);
+  if(view.duration){const label=track.duration?time(track.duration):'--:--';if(view.duration.textContent!==label)view.duration.textContent=label;}
   const boundary=ratio*view.bars.length;
-  view.bars.forEach((bar,i)=>bar.style.setProperty('--played',Math.max(0,Math.min(1,boundary-i))*100+'%'));
-  if(!demo&&visualizationMode(config)==='spectrum'&&(!track.playing||!spectrumFrame||Date.now()-(spectrumFrame.generatedAt??spectrumFrame.receivedAt)>150))drawSpectrum(null);
+  view.bars.forEach((bar,i)=>{
+    const played=Math.max(0,Math.min(1,boundary-i))*100+'%';
+    if(bar.style.getPropertyValue('--played')!==played)bar.style.setProperty('--played',played);
+  });
+}
+function animateProgress(){
+  if(!demo&&streamAlive&&track?.playing&&config.animate&&!widget.classList.contains('is-hidden'))renderProgress();
+  requestAnimationFrame(animateProgress);
 }
 function updateProfiles(profiles){
   const profile=profiles.find(p=>p.id===profileId);
@@ -154,3 +166,4 @@ else{
   events.onerror=()=>{if(!demo){streamAlive=false;playbackClock.reset();render();}};
 }
 setInterval(render,200);
+requestAnimationFrame(animateProgress);
