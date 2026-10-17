@@ -1,5 +1,6 @@
 // Preserve the small EventSource interface used by the UI, while multiplexing
 // state and optional spectrum frames on a single WebSocket per document.
+import {decodeSpectrumFrame,SPECTRUM_FORMAT} from './spectrum-codec.js';
 export function createStreamFactory({Socket=globalThis.WebSocket,baseUrl=globalThis.location?.href,setTimer=setTimeout,clearTimer=clearTimeout,onUnload=callback=>globalThis.addEventListener?.('beforeunload',callback)}={}){
   const channels=new Map();let socket=null,timer=null,queued=false,snapshot=null,subscribedSpectrum=false;
   function emit(channel,type,data){
@@ -20,12 +21,18 @@ export function createStreamFactory({Socket=globalThis.WebSocket,baseUrl=globalT
     const old=socket;socket=null;old?.close();snapshot=null;
     if(!wanted)return;
     const url=new URL('/api/live',baseUrl);url.protocol=url.protocol==='https:'?'wss:':'ws:';
+    url.searchParams.set('format',SPECTRUM_FORMAT);
     subscribedSpectrum=channels.has('spectrum');url.searchParams.set('spectrum',subscribedSpectrum?'1':'0');
-    const current=new Socket(url.href);socket=current;let failed=false;
+    const current=new Socket(url.href);current.binaryType='arraybuffer';socket=current;let failed=false;
     current.onopen=()=>{if(socket===current){syncSpectrum();emitAll('open');}};
     current.onmessage=message=>{
       if(socket!==current)return;
-      let envelope;try{envelope=JSON.parse(message.data);}catch{return;}
+      let envelope;
+      if(typeof message.data==='string'){try{envelope=JSON.parse(message.data);}catch{return;}}
+      else {
+        const data=decodeSpectrumFrame(message.data);if(!data)return;
+        envelope={stream:'spectrum',event:'spectrum',data};
+      }
       const {stream,event,data}=envelope;
       if(stream==='events'){
         if(event==='snapshot')snapshot=data;

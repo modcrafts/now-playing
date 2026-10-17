@@ -1,6 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {createStreamFactory} from '../public/event-stream.js';
+import {encodeSpectrumFrame,SPECTRUM_FORMAT} from '../public/spectrum-codec.js';
 
 function fixture(){
   const sockets=[],timers=new Map();let nextTimer=0,unload;
@@ -9,6 +10,7 @@ function fixture(){
     open(){this.readyState=1;this.onopen?.();}
     send(data){this.sent.push(JSON.parse(data));}
     message(stream,event,data){this.onmessage?.({data:JSON.stringify({stream,event,data})});}
+    binary(data){this.onmessage?.({data});}
     close(){this.readyState=3;this.onclose?.();}
   }
   const open=createStreamFactory({Socket,baseUrl:'http://127.0.0.1:3963/overlay',setTimer:callback=>{const id=++nextTimer;timers.set(id,callback);return id;},clearTimer:id=>timers.delete(id),onUnload:callback=>unload=callback});
@@ -49,5 +51,18 @@ test('late state subscribers receive the latest merged snapshot',async()=>{
   socket.message('events','audio-status',{source:'off'});
   let snapshot;f.open('/api/events').addEventListener('snapshot',event=>snapshot=JSON.parse(event.data));await flush();
   assert.equal(snapshot.track.position,2);assert.equal(snapshot.profiles[0].id,'scene');assert.equal(snapshot.audio.source,'off');
+  f.unload();
+});
+
+test('binary frequency frames coexist with text state and JSON fallback',async()=>{
+  const f=fixture(),spectrum=f.open('/api/spectrum');let received=[];
+  spectrum.addEventListener('spectrum',event=>received.push(JSON.parse(event.data)));
+  await flush();const socket=f.sockets[0];socket.open();
+  assert.equal(socket.binaryType,'arraybuffer');assert.equal(new URL(socket.url).searchParams.get('format'),SPECTRUM_FORMAT);
+  const input={bands:Array(44).fill(.001),rms:.000001,peak:.012345,generatedAt:1700000123456,at:1700000123463};
+  socket.binary(encodeSpectrumFrame(input).buffer);assert.deepEqual(received[0],input);
+  socket.binary(new ArrayBuffer(2));assert.equal(received.length,1,'malformed frames do not reach the visualizer');
+  const precise={...input,bands:Array(44).fill(1e-9)};
+  socket.message('spectrum','spectrum',precise);assert.deepEqual(received[1],precise);
   f.unload();
 });

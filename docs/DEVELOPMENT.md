@@ -6,6 +6,8 @@
 
 The dashboard and overlays use vanilla JavaScript and CSS. A Node.js HTTP server serves the UI, persists profiles, and multiplexes state and optional spectrum frames over one WebSocket per document. This keeps long-lived updates out of the browser's ordinary HTTP connection pool so multiple tabs and OBS components cannot starve artwork requests. Frequency subscriptions change on the existing connection, and disconnected clients retry automatically. Legacy SSE endpoints remain available for older clients. No npm packages are required.
 
+High-frequency spectrum messages negotiate a compact binary format; metadata and controls remain JSON. The native bridge's three-decimal band precision is preserved exactly, and higher-precision inputs fall back to JSON. See [the wire format](PROTOCOL.md) for field layout and compatibility.
+
 Windows PowerShell 5.1 bridges the official Apple Music app to the server:
 
 - `bridge/media.ps1` reads Windows media sessions, metadata, artwork, playback position, and playback controls.
@@ -27,6 +29,7 @@ The overlay advances playback progress from a monotonic local clock and renders 
 | `public/skin-renderer.js` | Individual skin layouts. |
 | `public/overlay.js` | Playback rendering and live updates. |
 | `public/event-stream.js` | Shared per-document live connection and reconnect handling. |
+| `public/spectrum-codec.js` | Shared binary spectrum encoder and decoder. |
 | `public/playback-clock.js` | Stable playback progress across small media-report corrections. |
 | `public/artwork-color.js` | Cover palette extraction and contrasting accent colors. |
 | `public/title-transition.js` | Isolated title text transitions and rapid-skip cleanup. |

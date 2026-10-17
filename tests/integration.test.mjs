@@ -94,7 +94,7 @@ test('normalize Apple Music combined artist and album without changing other sou
   assert.equal(normalizeTrack({ ...track, album: 'Already supplied' }).artist, track.artist);
 });
 test('dashboard, overlay and JS assets serve correctly', async () => {
-  for (const path of ['/', '/overlay', '/app.js', '/overlay.js', '/overlay.css', '/shared.js', '/skin-renderer.js', '/artwork-color.js', '/title-transition.js', '/spectrum-smoothing.js', '/playback-clock.js', '/event-stream.js', '/skins.html', '/gallery.js', '/gallery.css', '/artwork.svg']) {
+  for (const path of ['/', '/overlay', '/app.js', '/overlay.js', '/overlay.css', '/shared.js', '/skin-renderer.js', '/artwork-color.js', '/title-transition.js', '/spectrum-smoothing.js', '/playback-clock.js', '/event-stream.js', '/spectrum-codec.js', '/skins.html', '/gallery.js', '/gallery.css', '/artwork.svg']) {
     const response = await api(path); assert.equal(response.status, 200, path); assert.ok((await response.text()).length > 30);
   }
   const state = await (await api('/api/state')).json();
