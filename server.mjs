@@ -8,6 +8,7 @@ import { randomUUID } from 'node:crypto';
 import { DEFAULTS, validateConfig, normalizeTrack } from './lib/config.mjs';
 import { migrateConfig, skinDefaults } from './public/shared.js';
 import { createAudioService } from './lib/audio-service.mjs';
+import { attachLiveUpdates } from './lib/live-updates.mjs';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const RUNTIME = resolve(process.env.NP_RUNTIME_DIR || resolve(ROOT, '.runtime'));
@@ -49,9 +50,11 @@ let child, restartTimer, shuttingDown = false;
 let recent = [];
 let lastTrackKey = '';
 const clients = new Set();
+let live;
 const pending = new Map();
 const snapshot = () => ({ track, bridge, profiles, recent, audio:audio.getState() });
 function broadcast(type, data) {
+  live?.broadcast(type,data);
   const line = `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
   for (const res of clients) {
     if (res.writableLength > 256 * 1024) { res.destroy(); clients.delete(res); }
@@ -184,12 +187,13 @@ const server = http.createServer(async (req, res) => {
     json(res, err.code === 'ENOENT' ? 404 : err.status || 400, { error: err.code === 'ENOENT' ? '文件不存在' : err.message });
   }
 });
+live=attachLiveUpdates(server,{port:PORT,snapshot,audio});
 server.listen(PORT, '127.0.0.1', () => console.log(`\n  Now Playing / Apple Music\n  控制台  http://127.0.0.1:${PORT}\n  OBS     http://127.0.0.1:${PORT}/overlay?profile=default\n  按 Ctrl+C 停止服务。\n`));
 server.on('error', err => { console.error('服务启动失败:', err.message); shutdown(); process.exitCode = 1; });
 function shutdown() {
   shuttingDown = true; clearTimeout(restartTimer); clearInterval(heartbeat);
   child?.kill(); for (const res of clients) res.end();
-  audio.close();
+  live?.close();audio.close();
   for (const request of pending.values()) { clearTimeout(request.timer); request.resolve({ ok: false, error: '服务已停止' }); }
   server.close();
 }

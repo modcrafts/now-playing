@@ -4,7 +4,7 @@
 
 ## Stack
 
-The dashboard and overlays use vanilla JavaScript and CSS. A Node.js HTTP server serves the UI, persists profiles, and streams updates through Server-Sent Events. No npm packages are required.
+The dashboard and overlays use vanilla JavaScript and CSS. A Node.js HTTP server serves the UI, persists profiles, and multiplexes state and optional spectrum frames over one WebSocket per document. This keeps long-lived updates out of the browser's ordinary HTTP connection pool so multiple tabs and OBS components cannot starve artwork requests. Frequency subscriptions change on the existing connection, and disconnected clients retry automatically. Legacy SSE endpoints remain available for older clients. No npm packages are required.
 
 Windows PowerShell 5.1 bridges the official Apple Music app to the server:
 
@@ -19,12 +19,14 @@ The overlay advances playback progress from a monotonic local clock and renders 
 
 | Path | Responsibility |
 | --- | --- |
-| `server.mjs` | Local HTTP API, media bridge, profile persistence, and SSE. |
+| `server.mjs` | Local HTTP API, media bridge, profile persistence, and live updates. |
+| `lib/live-updates.mjs` | Local WebSocket transport, origin checks, heartbeat and backpressure. |
 | `lib/audio-service.mjs` | Audio capture lifecycle and spectrum subscribers. |
 | `lib/config.mjs` | Configuration validation and media normalization. |
 | `public/shared.js` | Skin catalog, defaults, and configuration migration. |
 | `public/skin-renderer.js` | Individual skin layouts. |
 | `public/overlay.js` | Playback rendering and live updates. |
+| `public/event-stream.js` | Shared per-document live connection and reconnect handling. |
 | `public/playback-clock.js` | Stable playback progress across small media-report corrections. |
 | `public/artwork-color.js` | Cover palette extraction and contrasting accent colors. |
 | `public/title-transition.js` | Isolated title text transitions and rapid-skip cleanup. |

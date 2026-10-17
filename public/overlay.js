@@ -4,6 +4,7 @@ import {loadArtworkColor,contrastingArtworkColor} from '/artwork-color.js';
 import {createTitleTransition} from '/title-transition.js';
 import {smallChangeTransitionMs} from '/spectrum-smoothing.js';
 import {createPlaybackClock} from '/playback-clock.js';
+import {openEventStream} from '/event-stream.js';
 const params=new URLSearchParams(location.search);
 const demo=params.get('preview')==='1',card=params.get('card')==='1',dashboard=params.get('dashboard')==='1';
 const profileId=params.get('profile')||'default';
@@ -49,7 +50,7 @@ function connectSpectrum(){
   if(!needed){spectrumEvents?.close();spectrumEvents=null;drawSpectrum(null);return;}
   if(spectrumEvents){drawSpectrum(spectrumFrame);return;}
   drawSpectrum(null);
-  spectrumEvents=new EventSource('/api/spectrum');
+  spectrumEvents=openEventStream('/api/spectrum');
   spectrumEvents.addEventListener('spectrum',e=>{
     const data=JSON.parse(e.data),now=Date.now();
     if(now-(data.generatedAt??data.at??now)>150)return;
@@ -159,7 +160,7 @@ window.addEventListener('message',event=>{
 });
 if(card)applyConfig(skinDefaults(params.get('skin')));
 else{
-  const events=new EventSource('/api/events');
+  const events=openEventStream('/api/events');
   events.addEventListener('snapshot',e=>{const data=JSON.parse(e.data);streamAlive=true;track=data.track;updateProfiles(data.profiles);render();});
   events.addEventListener('state',e=>{streamAlive=true;if(!demo)track=JSON.parse(e.data).track;render();});
   events.addEventListener('profiles',e=>updateProfiles(JSON.parse(e.data)));

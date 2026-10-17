@@ -1,4 +1,5 @@
 import { DEFAULTS, SKINS, applySkin, skinDefaults, migrateConfig, outputSize, visualizationMode } from '/shared.js';
+import {openEventStream} from '/event-stream.js';
 const $ = id => document.getElementById(id);
 let profiles = [], profileId = localStorage.getItem('np-profile') || 'default';
 let config = { ...DEFAULTS }, currentTrack = null, currentBridge = null;
@@ -232,7 +233,7 @@ function setOnline(online) {
   if (!online) { $('connection-short').textContent = '本地服务连接中断'; document.querySelectorAll('[data-action]').forEach(b => b.disabled = true); }
 }
 renderSkins(); syncForm();
-const events = new EventSource('/api/events');
+const events = openEventStream('/api/events');
 events.addEventListener('snapshot', event => {
   const data = JSON.parse(event.data); setOnline(true); profiles = data.profiles;
   if (!ready) {
