@@ -1,5 +1,5 @@
 // Independent DOM for every design; the playback engine fills data-role elements.
-const title = '<div class="song-title" data-role="title"><span data-text></span></div>';
+const title = '<div class="song-title" data-role="title"><span class="title-motion"><span data-text></span></span></div>';
 const artist = '<div class="song-artist" data-role="artist"><span data-text></span></div>';
 const album = '<div class="song-album" data-role="album"><span data-text></span></div>';
 const badge = '<div class="music-badge" data-role="badge">♫ APPLE MUSIC <span data-role="status">NOW PLAYING</span></div>';

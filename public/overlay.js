@@ -1,6 +1,7 @@
 import {DEFAULTS,getSkin,skinDefaults,migrateConfig,visualizationMode} from '/shared.js';
 import {buildSkin} from '/skin-renderer.js';
 import {loadArtworkColor,contrastingArtworkColor} from '/artwork-color.js';
+import {createTitleTransition} from '/title-transition.js';
 const params=new URLSearchParams(location.search);
 const demo=params.get('preview')==='1',card=params.get('card')==='1',dashboard=params.get('dashboard')==='1';
 const profileId=params.get('profile')||'default';
@@ -10,6 +11,7 @@ const widget=document.querySelector('#widget'),frame=document.querySelector('#fr
 const error=document.querySelector('#overlay-error');
 let config={...DEFAULTS},track,view,activeSkin,streamAlive=true,pauseAt,lastArt='',lastCopy='';
 let spectrumEvents=null,spectrumFrame=null,spectrumPaintPending=false;
+let titleTransition=null;
 let paletteKey='',paletteRequested=false,paletteVersion=0,artworkColor=null;
 function applyAccent(){
   widget.style.setProperty('--accent',config.accentFromArtwork&&artworkColor?contrastingArtworkColor(artworkColor,config.background,config.accent):config.accent);
@@ -59,7 +61,12 @@ function demoTrack(){const playing=params.get('paused')!=='1';return {connected:
 function applyConfig(value){
   config=migrateConfig(value);
   if(card&&params.has('skin'))config=skinDefaults(params.get('skin'));
-  if(activeSkin!==config.skin){activeSkin=config.skin;view=buildSkin(widget,activeSkin);lastArt='';lastCopy='';}
+  if(activeSkin!==config.skin){
+    titleTransition?.destroy();activeSkin=config.skin;view=buildSkin(widget,activeSkin);
+    titleTransition=createTitleTransition(view.texts.find(([role])=>role==='title')[1]);
+    lastArt='';lastCopy='';
+  }
+  if(!config.animate)titleTransition.finish();
   const meta=getSkin(config.skin);
   widget.className='widget skin-'+config.skin+' font-'+config.font;
   const mode=visualizationMode(config);
@@ -88,7 +95,7 @@ function fit(){
 function detectOverflow(){
   for(const [,el]of view.texts){
     if(!el)continue;
-    const diff=el.scrollWidth-el.parentElement.clientWidth;
+    const diff=el.scrollWidth-el.closest('[data-role]').clientWidth;
     el.classList.toggle('marquee',diff>5);el.style.setProperty('--travel',-Math.max(0,diff)+'px');
     el.style.setProperty('--marquee-time',Math.max(8,diff/24+5)+'s');
   }
@@ -101,9 +108,15 @@ function render(){
   widget.classList.toggle('paused',!track.playing);
   const key=track.title+'\0'+track.artist+'\0'+track.album;
   if(key!==lastCopy){
-    lastCopy=key;for(const [role,el]of view.texts)if(el)el.textContent=track[role]||(role==='artist'?'未知艺术家':'');
+    lastCopy=key;
+    for(const [role,el]of view.texts)if(el){
+      const value=track[role]||(role==='artist'?'未知艺术家':'');
+      if(role==='title')titleTransition.set(value,config.animate&&!hidden);
+      else el.textContent=value;
+    }
     requestAnimationFrame(detectOverflow);
   }
+  if(hidden)titleTransition.finish();
   if(view.status)view.status.textContent=track.playing?'NOW PLAYING':'PAUSED';
   const art=track.artwork==='demo'?'/artwork.svg':track.artwork?'/api/artwork?v='+encodeURIComponent(track.artwork):'/placeholder.svg';
   if(art!==lastArt){lastArt=art;for(const img of view.art)img.src=art;}
