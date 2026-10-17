@@ -1,0 +1,63 @@
+# Development
+
+[English README](../README.md) · [中文说明](../README.zh-CN.md)
+
+## Stack
+
+The dashboard and overlays use vanilla JavaScript and CSS. A Node.js HTTP server serves the UI, persists profiles, and streams updates through Server-Sent Events. No npm packages are required.
+
+Windows PowerShell 5.1 bridges the official Apple Music app to the server:
+
+- `bridge/media.ps1` reads Windows media sessions, metadata, artwork, playback position, and playback controls.
+- `bridge/audio.ps1` compiles `bridge/AudioCapture.cs` for WASAPI process or system-output loopback. The browser receives 44 FFT band levels, never raw audio.
+
+The audio pipeline uses a 2048-sample window and targets a 16 ms publication interval; the actual interval depends on device callbacks. Slow clients skip obsolete spectrum frames. Session and endpoint checks run outside the capture loop.
+
+## Project map
+
+| Path | Responsibility |
+| --- | --- |
+| `server.mjs` | Local HTTP API, media bridge, profile persistence, and SSE. |
+| `lib/audio-service.mjs` | Audio capture lifecycle and spectrum subscribers. |
+| `lib/config.mjs` | Configuration validation and media normalization. |
+| `public/shared.js` | Skin catalog, defaults, and configuration migration. |
+| `public/skin-renderer.js` | Individual skin layouts. |
+| `public/overlay.js` | Playback rendering and live updates. |
+| `public/artwork-color.js` | Cover palette extraction and contrasting accent colors. |
+| `public/title-transition.js` | Bounded title transitions and rapid-skip cleanup. |
+
+## Run and test
+
+```powershell
+node server.mjs
+node --test
+```
+
+For a separate development instance, choose another port and runtime directory:
+
+```powershell
+$env:PORT = '3964'
+$env:NP_RUNTIME_DIR = "$PWD\.runtime\development"
+node server.mjs
+```
+
+The integration tests use port `13963` and an isolated runtime. Native audio tests run on Windows. `NP_NO_BRIDGE=1` disables Windows capture for UI-only development.
+
+## Diagnostics
+
+Run these in the signed-in Windows desktop session:
+
+```powershell
+# Read the current media state once.
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\bridge\media.ps1 -RuntimePath "$PWD\.runtime" -Once
+
+# Inspect artwork publication.
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\bridge\diagnose.ps1
+
+# Inspect active Apple Music audio sessions.
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\bridge\audio.ps1 -Diagnose
+```
+
+Apple Music may output audio through `AMPLibraryAgent.exe` rather than its UI process. Capture selects the active Apple audio session; it does not automatically broaden process capture to system audio.
+
+Local settings, artwork, and command files live in `.runtime/`. Treat them as user data and keep them out of commits. Preserve ASCII text and CRLF line endings in `start.cmd`.
