@@ -80,6 +80,7 @@ Open [the skin gallery](http://127.0.0.1:3963/skins.html) to compare every desig
 
 - **No song information:** start playback in the official Apple Music app, then check the dashboard's **音乐连接** (Music connection) page.
 - **No spectrum:** select the real spectrum mode and enable **使用实时歌曲** (Use live song) in the preview. Check the audio source and signal status.
+- **Using Mixline or another audio router:** keep the Apple Music capture source selected. Playback sessions are detected across all active output devices. Restart the local server after updating.
 - **Changes do not appear in OBS:** restart the server after updating the code, then refresh the browser source. Use the recommended canvas size if the overlay is cropped.
 
 Lyrics and animated Apple Music artwork are not currently supported.

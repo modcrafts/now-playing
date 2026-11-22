@@ -24,21 +24,51 @@ namespace NowPlayingAudio
         }
         static int ApplePid()
         {
-            try { foreach(SessionInfo session in AppleSessions()) if(session.State==1) return session.Pid; } catch {}
-            foreach (Process p in Process.GetProcessesByName("AppleMusic"))
+            try { int selected=SelectApplePid(AppleSessions()); if(selected!=0)return selected; } catch {}
+            foreach(string name in new string[]{"AMPLibraryAgent","AppleMusic"})
+            foreach (Process p in Process.GetProcessesByName(name))
             {
                 using (p) { try { if (!p.HasExited) return p.Id; } catch {} }
             }
             return 0;
         }
-        public sealed class SessionInfo { public int Pid,State; public string Name; public float Peak; }
+        public sealed class SessionInfo { public int Pid,State; public string Name,DeviceId; public float Peak; }
+        static bool IsApple(string name) { return String.Equals(name,"AppleMusic",StringComparison.OrdinalIgnoreCase)||String.Equals(name,"AMPLibraryAgent",StringComparison.OrdinalIgnoreCase); }
+        public static int SelectApplePid(SessionInfo[] sessions)
+        {
+            SessionInfo best=null;
+            foreach(SessionInfo value in sessions)
+            {
+                if(value.Pid<=0||value.State==2||!IsApple(value.Name))continue;
+                if(best==null||(value.State==1&&best.State!=1)||value.State==best.State&&(value.Peak>best.Peak||value.Peak==best.Peak&&String.Equals(value.Name,"AMPLibraryAgent",StringComparison.OrdinalIgnoreCase)))best=value;
+            }
+            return best==null?0:best.Pid;
+        }
         public static SessionInfo[] AppleSessions()
         {
             List<SessionInfo> found=new List<SessionInfo>();
-            IMMDeviceEnumerator enumerator=(IMMDeviceEnumerator)new DeviceEnumerator(); IMMDevice device=null; IAudioSessionManager2 manager=null; IAudioSessionEnumerator sessions=null;
+            IMMDeviceEnumerator enumerator=(IMMDeviceEnumerator)new DeviceEnumerator(); IMMDeviceCollection devices=null;
             try
             {
-                Check(enumerator.GetDefaultAudioEndpoint(0,1,out device));
+                // Routed/virtual outputs may not be the system default endpoint.
+                Check(enumerator.EnumAudioEndpoints(0,1,out devices));
+                uint count;Check(devices.GetCount(out count));
+                for(uint i=0;i<count;i++)
+                {
+                    IMMDevice device=null;
+                    try { Check(devices.Item(i,out device)); ReadAppleSessions(device,found); }
+                    catch {} finally { if(device!=null)Marshal.ReleaseComObject(device); }
+                }
+            }
+            finally { if(devices!=null)Marshal.ReleaseComObject(devices);Marshal.ReleaseComObject(enumerator); }
+            return found.ToArray();
+        }
+        static void ReadAppleSessions(IMMDevice device,List<SessionInfo> found)
+        {
+            IAudioSessionManager2 manager=null; IAudioSessionEnumerator sessions=null;
+            try
+            {
+                string deviceId;Check(device.GetId(out deviceId));
                 Guid id=new Guid("77AA99A0-1BD6-484F-8BC7-2C654C9A9B6F"); object service;
                 Check(device.Activate(ref id,23,IntPtr.Zero,out service)); manager=(IAudioSessionManager2)service;
                 Check(manager.GetSessionEnumerator(out sessions)); int count; Check(sessions.GetCount(out count));
@@ -51,10 +81,10 @@ namespace NowPlayingAudio
                         uint pid; Check(control.GetProcessId(out pid)); if(pid==0) continue;
                         using(Process p=Process.GetProcessById((int)pid))
                         {
-                            if(!p.ProcessName.Equals("AppleMusic",StringComparison.OrdinalIgnoreCase)&&!p.ProcessName.Equals("AMPLibraryAgent",StringComparison.OrdinalIgnoreCase))continue;
+                            if(!IsApple(p.ProcessName))continue;
                             int state;Check(control.GetState(out state));float peak=0;
                             try { ((IAudioMeterInformation)value).GetPeakValue(out peak); } catch {}
-                            found.Add(new SessionInfo{Pid=(int)pid,Name=p.ProcessName,State=state,Peak=peak});
+                            found.Add(new SessionInfo{Pid=(int)pid,Name=p.ProcessName,State=state,Peak=peak,DeviceId=deviceId});
                         }
                     }
                     catch {} finally { if(value!=null)Marshal.ReleaseComObject(value); }
@@ -63,9 +93,7 @@ namespace NowPlayingAudio
             finally
             {
                 if(sessions!=null)Marshal.ReleaseComObject(sessions);if(manager!=null)Marshal.ReleaseComObject(manager);
-                if(device!=null)Marshal.ReleaseComObject(device);Marshal.ReleaseComObject(enumerator);
             }
-            return found.ToArray();
         }
         static IAudioClient ProcessClient(int pid)
         {
@@ -327,11 +355,16 @@ namespace NowPlayingAudio
     [ComImport,Guid("BCDE0395-E52F-467C-8E3D-C4579291692E")] class DeviceEnumerator {}
     [ComImport,Guid("A95664D2-9614-4F35-A746-DE8DB63617E6"),InterfaceType(ComInterfaceType.InterfaceIsIUnknown)] interface IMMDeviceEnumerator
     {
-        [PreserveSig]int EnumAudioEndpoints(int flow,uint mask,out IntPtr devices);
+        [PreserveSig]int EnumAudioEndpoints(int flow,uint mask,out IMMDeviceCollection devices);
         [PreserveSig]int GetDefaultAudioEndpoint(int flow,int role,out IMMDevice device);
         [PreserveSig]int GetDevice([MarshalAs(UnmanagedType.LPWStr)]string id,out IMMDevice device);
         [PreserveSig]int RegisterEndpointNotificationCallback(IntPtr callback);
         [PreserveSig]int UnregisterEndpointNotificationCallback(IntPtr callback);
+    }
+    [ComImport,Guid("0BD7A1BE-7A1A-44DB-8397-CC5392387B5E"),InterfaceType(ComInterfaceType.InterfaceIsIUnknown)] interface IMMDeviceCollection
+    {
+        [PreserveSig]int GetCount(out uint count);
+        [PreserveSig]int Item(uint index,out IMMDevice device);
     }
     [ComImport,Guid("D666063F-1587-4E43-81F1-B948E807363F"),InterfaceType(ComInterfaceType.InterfaceIsIUnknown)] interface IMMDevice
     {
