@@ -50,7 +50,7 @@ cd now-playing
 node server.mjs
 ```
 
-You can also double-click **`start.cmd`**. There are no npm dependencies to install.
+You can also double-click **`start.cmd`**. If you use fnm, the launcher can find an installed Node.js 18+ version automatically. There are no npm dependencies to install.
 
 ### Add to OBS
 

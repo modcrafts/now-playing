@@ -50,7 +50,7 @@ cd now-playing
 node server.mjs
 ```
 
-也可以直接双击 **`start.cmd`**。项目没有 npm 第三方依赖，无需执行 `npm install`。
+也可以直接双击 **`start.cmd`**。如果用 fnm，脚本会自动查找已安装的 Node.js 18+。项目没有 npm 第三方依赖，无需执行 `npm install`。
 
 ### 添加到 OBS
 
